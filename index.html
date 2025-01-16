@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DegenPot Landing Page</title>
+    <!-- Tailwind CSS (CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Highcharts (CDN) -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <!-- Your Provided CSS -->
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=VT323&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap");
+
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+
+      body {
+        min-height: 100vh;
+        background-color: #080808;
+      }
+
+      * {
+        font-family: "Space Grotesk";
+      }
+
+      .scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .scrollbar::-webkit-scrollbar-thumb {
+        background: #ffffff50;
+      }
+
+      .scrollbar::-webkit-scrollbar-track {
+        box-shadow: inset 0 0 0px #ffffff;
+        width: 4px;
+      }
+
+      .wallet-adapter-button {
+        width: 100% !important;
+      }
+      .wallet-adapter-dropdown {
+        width: 216px !important;
+      }
+      .playground .wallet-adapter-button.wallet-adapter-button-trigger {
+        border-radius: 16px !important;
+        text-align: center !important;
+        background: #7e49f0 !important;
+        margin-top: 32px !important;
+        height: 62px !important;
+        margin-bottom: 32px !important;
+        display: flex !important;
+        justify-content: center !important;
+      }
+
+      .wallet-adapter-button.wallet-adapter-button-trigger {
+        white-space: nowrap !important;
+      }
+
+      @keyframes rotateAnimation {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .highcharts-container {
+        /* If you want to size the chart container, do so here */
+      }
+    </style>
+  </head>
+  <body class="bg-[#080808] flex flex-col items-center justify-between p-6 text-white">
+    <!-- HEADER -->
+    <header class="w-full max-w-screen-xl mx-auto flex items-center justify-between mb-10">
+      <!-- Logo -->
+      <div class="flex items-center space-x-2">
+        <!-- Replace with your logo image or text -->
+        <img
+          src="https://via.placeholder.com/50x50.png?text=Logo"
+          alt="DegenPot Logo"
+          class="w-12 h-12"
+        />
+        <span class="text-xl font-bold">DegenPot</span>
+      </div>
+
+      <!-- Social Links -->
+      <div class="flex items-center space-x-4">
+        <!-- Twitter -->
+        <a
+          href="https://twitter.com/yourtwitter"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:opacity-70 transition-opacity"
+        >
+          <img
+            src="https://via.placeholder.com/24x24.png?text=T"
+            alt="Twitter Link"
+            class="w-6 h-6"
+          />
+        </a>
+        <!-- Telegram -->
+        <a
+          href="https://t.me/yourtelegram"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:opacity-70 transition-opacity"
+        >
+          <img
+            src="https://via.placeholder.com/24x24.png?text=TG"
+            alt="Telegram Link"
+            class="w-6 h-6"
+          />
+        </a>
+      </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <main class="flex-grow flex flex-col items-center justify-center text-center px-4">
+      <h1 class="text-4xl md:text-6xl font-bold mb-4">Welcome to DegenPot</h1>
+      <p class="text-xl md:text-2xl opacity-80 mb-8">
+        The ultimate hub for the degenerate gambler in all of us.
+      </p>
+      <a
+        href="https://www.degenpot.fun/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-block bg-[#7E49F0] rounded-2xl text-white font-bold py-4 px-8 text-lg hover:opacity-80 transition-opacity mb-10"
+      >
+        Enter DegenPot
+      </a>
+
+      <!-- CHART CONTAINER -->
+      <div id="chart-container" class="w-full max-w-[400px] mx-auto"></div>
+    </main>
+
+    <!-- SCRIPTS -->
+    <script>
+      // ----------------------------------
+      // 1. DUMMY DATA & UTILITY FUNCTIONS
+      // ----------------------------------
+
+      // Example variable for LAMPORTS_PER_SOL
+      const LAMPORTS_PER_SOL = 1_000_000_000;
+
+      // Example variables that the snippet references
+      let sumPots = 5;        // total SOL in pot (dummy)
+      let time = 60;          // countdown time
+      let angle = 0;          // angle for rotation
+      let user = null;        // user that the pointer lands on
+      let win = null;         // winning user
+      let hovered = NaN;      // which slice is hovered
+      let timeout = null;     // for setTimeout
+      let interval = null;    // for setInterval
+
+      // Example round data for the chart
+      const roundData = {
+        players: [
+          { id: 1, player: "Alice", amount: 2 * LAMPORTS_PER_SOL, color: "#FF204E" },
+          { id: 2, player: "Bob", amount: 1 * LAMPORTS_PER_SOL, color: "#F72798" },
+          { id: 3, player: "Charlie", amount: 3 * LAMPORTS_PER_SOL, color: "#F57D1F" },
+          { id: 4, player: "Dave", amount: 1.5 * LAMPORTS_PER_SOL, color: "#EBF400" },
+        ],
+      };
+
+      // Example: a function that returns some dummy SVG (instead of a real identicon)
+      function generateFromString(str) {
+        // Just returning a small dummy SVG for demonstration
+        return `
+          <svg width="30" height="30" viewBox="0 0 30 30">
+            <rect width="30" height="30" fill="#888" />
+            <text x="15" y="20" fill="#fff" text-anchor="middle" font-size="12">${str[0]}</text>
+          </svg>
+        `;
+      }
+
+      // Example setHover function
+      function setHover(id) {
+        hovered = id;
+      }
+
+      // ----------------------------------
+      // 2. INITIALIZE THE HIGHCHART
+      // ----------------------------------
+      document.addEventListener("DOMContentLoaded", function () {
+        const chart = Highcharts.chart("chart-container", {
+          chart: {
+            type: "pie",
+            backgroundColor: "#080808",
+            events: {
+              // ======== LOAD EVENT ========
+              load: function () {
+                const chart = this;
+
+                // Example rotate function
+                function rotate() {
+                  if (!document.hidden) {
+                    angle += 5; // increment angle
+                  }
+
+                  if (angle >= 360) {
+                    angle = 0;
+                  }
+
+                  // Update the chart startAngle
+                  if (chart.options) {
+                    chart.update(
+                      {
+                        plotOptions: {
+                          pie: {
+                            startAngle: angle,
+                            animation: {
+                              duration: 50,
+                            },
+                          },
+                        },
+                      },
+                      true,
+                      false,
+                      false
+                    );
+
+                    const data = chart.series[0].data;
+                    let currentAngle = 0;
+
+                    for (let i = 0; i < data.length; i++) {
+                      const point = data[data.length - 1 - i];
+                      // @ts-ignore
+                      const pointAngle = (point.percentage / 100) * 360;
+
+                      if (angle >= currentAngle && angle < currentAngle + pointAngle) {
+                        // @ts-ignore
+                        user = point.name;
+                        break;
+                      }
+                      currentAngle += pointAngle;
+                    }
+                  }
+                  timeout = setTimeout(rotate, 50);
+                }
+
+                // Rotate every 15s
+                interval = setInterval(rotate, 15000);
+              },
+
+              // ======== RENDER EVENT ========
+              render: function () {
+                const chart = this;
+                let text;
+                let countdownText;
+
+                if (!win) {
+                  text = `<p style="display:flex;">
+                    <img src="https://via.placeholder.com/26x20.png?text=SOL" width="26" height="20" style="margin-right:10px;"/>
+                    ${sumPots} SOL
+                  </p>`;
+                  countdownText = `Time left: ${time}s`;
+                } else {
+                  // If there is a winner
+                  let winPlayer = this.series[0].data.find((item) => item.name === win);
+                  let winPercent = Math.round((sumPots * 10) / (winPlayer.y / LAMPORTS_PER_SOL)) / 10;
+                  text = `
+                    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;position:absolute;top:-60px;right:-100px;">
+                      <img src="https://via.placeholder.com/100.png?text=WIN" width="100"/>
+                      <p style="display:flex;font-size:16px">
+                        ${winPlayer.name.slice(0, 3)}...${winPlayer.name.slice(-3)} 
+                        is a ${winPercent}X winner
+                      </p>
+                    </div>
+                  `;
+                }
+
+                const style = {
+                  color: "#FFFFFF",
+                  fontSize: "20px",
+                  textAlign: "center",
+                };
+
+                // Add or update main custom text
+                // @ts-ignore
+                if (!chart.customText) {
+                  // @ts-ignore
+                  chart.customText = chart.renderer
+                    .text(text, chart.chartWidth / 2, chart.plotHeight / 2 + chart.plotTop, true)
+                    .css(style)
+                    .attr({
+                      align: "center",
+                      zIndex: 5,
+                    })
+                    .add();
+                } else {
+                  // @ts-ignore
+                  chart.customText.attr({
+                    text: text,
+                    x: chart.chartWidth / 2,
+                    y: chart.plotHeight / 2 + chart.plotTop,
+                  });
+                }
+
+                // Add or update countdown text
+                if (!win) {
+                  // @ts-ignore
+                  if (!chart.countdownText) {
+                    // @ts-ignore
+                    chart.countdownText = chart.renderer
+                      .text(
+                        countdownText,
+                        chart.chartWidth / 2,
+                        chart.plotHeight / 2 + chart.plotTop + 30
+                      )
+                      .css(style)
+                      .attr({
+                        align: "center",
+                        zIndex: 5,
+                      })
+                      .add();
+                  } else {
+                    // @ts-ignore
+                    chart.countdownText.attr({
+                      text: countdownText,
+                      x: chart.chartWidth / 2,
+                      y: chart.plotHeight / 2 + chart.plotTop + 30,
+                    });
+                  }
+                }
+              },
+
+              // ======== REDRAW EVENT ========
+              redraw: function () {
+                const chart = this;
+                // Keep text centered on window resize
+                // @ts-ignore
+                if (chart.customText) {
+                  // @ts-ignore
+                  chart.customText.attr({
+                    x: chart.chartWidth / 2,
+                    y: chart.plotHeight / 2 + chart.plotTop,
+                  });
+                }
+                // @ts-ignore
+                if (chart.countdownText) {
+                  // @ts-ignore
+                  chart.countdownText.attr({
+                    x: chart.chartWidth / 2,
+                    y: chart.plotHeight / 2 + chart.plotTop + 30,
+                  });
+                }
+              },
+            },
+          },
+
+          title: {
+            text: "",
+          },
+          exporting: {
+  enabled: false
+},
+          credits: {
+            enabled: false,
+          },
+          pane: {
+            startAngle: 0,
+            endAngle: 360,
+            size: "100%",
+            background: {
+              backgroundColor: "#080808",
+              innerRadius: "100%",
+              outerRadius: "100%",
+              borderWidth: 6,
+              shape: "solid",
+            },
+          },
+          tooltip: {
+            enabled: true,
+            useHTML: true,
+            padding: 0,
+            borderRadius: 12,
+            formatter: function () {
+              let imgUrl = generateFromString(this.key);
+              let svg = imgUrl
+                .replace(/width="30"/g, 'width="30"')
+                .replace(/height="30"/g, 'height="30"')
+                .replace(/viewBox="0 0 30 30"/g, 'viewBox="0 0 30 30"');
+              let amount = (this.y / LAMPORTS_PER_SOL).toLocaleString();
+              return `
+                <div style="border:2px solid ${this.color}; background-color:#080808; color:white; padding:10px; border-radius:12px;display:flex;align-items:center;">
+                  <div style="width: 30px; height: 30px;">${svg}</div>
+                  <div style="display:flex; flex-direction:column; margin-left:10px;">
+                    <div>${this.key}</div>
+                    <div>Amount: ${amount} SOL</div>
+                  </div>
+                </div>`;
+            },
+          },
+
+          yAxis: {
+            min: 0,
+            max: 60,
+            stops: [[1.0, "#FAF9F6"]],
+            lineWidth: 0,
+            tickWidth: 0,
+            minorTickInterval: null,
+            tickAmount: 0,
+            labels: {
+              enabled: false,
+            },
+          },
+          plotOptions: {
+            pie: {
+              dataLabels: {
+                enabled: false,
+              },
+              center: ["50%", "50%"],
+              size: "100%",
+              point: {
+                events: {
+                  mouseOver: function () {
+                    // @ts-ignore
+                    setHover(this.id);
+                  },
+                  mouseOut: function () {
+                    setHover(NaN);
+                  },
+                },
+              },
+            },
+            solidgauge: {
+              dataLabels: {
+                enabled: false,
+              },
+              linecap: "round",
+              rounded: false,
+            },
+          },
+          series: [
+            {
+              type: "pie",
+              name: "Amount",
+              data: roundData.players.map((item) => ({
+                name: item.player,
+                y: item.amount,
+                id: item.id,
+                opacity: Number.isNaN(hovered) ? 1 : hovered === item.id ? 1 : 0.2,
+                color: item.color,
+              })),
+              innerSize: "65%",
+              animation: 100,
+            },
+            // Additional series (if any) can go here
+          ],
+        });
+      });
+    </script>
+  </body>
+</html>
